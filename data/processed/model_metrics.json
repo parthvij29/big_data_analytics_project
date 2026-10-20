@@ -1,0 +1,56 @@
+{
+    "Model_1_GBT_Regressor": {
+        "model_name": "Gradient Boosted Tree Regressor (GBT)",
+        "module": "Admin / Grid Load Forecasting",
+        "RMSE": 6.2769,
+        "MAE": 5.0558,
+        "R2_Score": 0.7203
+    },
+    "Model_2_RF_Regressor": {
+        "model_name": "Random Forest Regressor",
+        "module": "Admin / Grid Load Benchmark",
+        "RMSE": 6.2578,
+        "MAE": 5.0579,
+        "R2_Score": 0.722
+    },
+    "Model_3_RF_Classifier": {
+        "model_name": "Random Forest Classifier",
+        "module": "Driver / Station Congestion Level",
+        "Accuracy": 0.95,
+        "Precision": 0.9577,
+        "Recall": 0.95,
+        "F1_Score": 0.9491
+    },
+    "Model_4_Linear_Regression": {
+        "model_name": "Linear Regression",
+        "module": "Driver / Session Duration Prediction",
+        "RMSE": 36.05,
+        "MAE": 29.9388,
+        "R2_Score": 0.8282
+    },
+    "Model_5_KMeans_Clustering": {
+        "model_name": "K-Means Spatial Clustering",
+        "module": "City Planner / Hub Siting Optimization",
+        "K_Clusters": 4,
+        "Silhouette_Score": 0.6709,
+        "WSSSE_Inertia": 0.6086,
+        "Recommended_Centroids_Lat_Lon": [
+            [
+                39.98979597034765,
+                -105.23497483946831
+            ],
+            [
+                40.01860478156719,
+                -105.28012231628095
+            ],
+            [
+                40.02889716314779,
+                -105.21848361228407
+            ],
+            [
+                40.0158813371869,
+                -105.24781620134874
+            ]
+        ]
+    }
+}
