@@ -2,54 +2,54 @@
     "Model_1_GBT_Regressor": {
         "model_name": "Gradient Boosted Tree Regressor (GBT)",
         "module": "Admin / Grid Load Forecasting",
-        "RMSE": 6.2769,
-        "MAE": 5.0558,
-        "R2_Score": 0.7203
+        "RMSE": 8.0874,
+        "MAE": 6.7507,
+        "R2_Score": 0.3332
     },
     "Model_2_RF_Regressor": {
         "model_name": "Random Forest Regressor",
         "module": "Admin / Grid Load Benchmark",
-        "RMSE": 6.2578,
-        "MAE": 5.0579,
-        "R2_Score": 0.722
+        "RMSE": 7.9241,
+        "MAE": 6.6594,
+        "R2_Score": 0.3599
     },
     "Model_3_RF_Classifier": {
         "model_name": "Random Forest Classifier",
         "module": "Driver / Station Congestion Level",
-        "Accuracy": 0.95,
-        "Precision": 0.9577,
-        "Recall": 0.95,
-        "F1_Score": 0.9491
+        "Accuracy": 0.963,
+        "Precision": 0.9673,
+        "Recall": 0.963,
+        "F1_Score": 0.962
     },
     "Model_4_Linear_Regression": {
         "model_name": "Linear Regression",
         "module": "Driver / Session Duration Prediction",
-        "RMSE": 36.05,
-        "MAE": 29.9388,
-        "R2_Score": 0.8282
+        "RMSE": 23.9893,
+        "MAE": 16.8761,
+        "R2_Score": 0.8237
     },
     "Model_5_KMeans_Clustering": {
         "model_name": "K-Means Spatial Clustering",
         "module": "City Planner / Hub Siting Optimization",
         "K_Clusters": 4,
-        "Silhouette_Score": 0.6709,
-        "WSSSE_Inertia": 0.6086,
+        "Silhouette_Score": 0.4445,
+        "WSSSE_Inertia": 0.0314,
         "Recommended_Centroids_Lat_Lon": [
             [
-                39.98979597034765,
-                -105.23497483946831
+                28.579966666666667,
+                77.26989999999999
             ],
             [
-                40.01860478156719,
-                -105.28012231628095
+                28.4592,
+                77.52973333333334
             ],
             [
-                40.02889716314779,
-                -105.21848361228407
+                28.5256,
+                77.0945
             ],
             [
-                40.0158813371869,
-                -105.24781620134874
+                28.562075,
+                77.403525
             ]
         ]
     }

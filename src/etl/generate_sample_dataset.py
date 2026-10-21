@@ -2,24 +2,26 @@
 generate_sample_dataset.py
 --------------------------
 Generates realistic, schema-accurate Electric Vehicle Charging Station
-Energy Consumption data matching the City of Boulder Open Data schema.
+Energy Consumption dataset for India (focusing on Delhi-NCR & Greater Noida around Bennett University).
 
 Columns:
-- Station_Name: Name of the facility / charging hub
+- Station_Name: Name of the Indian facility / charging hub
 - Address: Street address
-- City: City (Boulder)
-- State: CO
-- Postal_Code: ZIP Code
-- Latitude: Double
-- Longitude: Double
+- City: Greater Noida / Noida / New Delhi / Gurugram
+- State: UP / DL / HR
+- Postal_Code: PIN Code
+- Latitude: Double (WGS 84)
+- Longitude: Double (WGS 84)
 - Start_Date_Time: Timestamp (YYYY-MM-DD HH:MM:SS)
 - End_Date_Time: Timestamp (YYYY-MM-DD HH:MM:SS)
 - Total_Duration_hh_mm_ss: HH:MM:SS
 - Charging_Time_hh_mm_ss: HH:MM:SS
+- Total_Duration_Minutes: Double
+- Charging_Duration_Minutes: Double
 - Energy__kWh_: Energy transferred in kilowatt-hours
-- Port_Type: Level 2 / DC Fast
-- Port_Number: 1 or 2
-- User_ID: Anonymized driver ID
+- Port_Type: DC Fast / Level 2
+- Port_Number: 1, 2, 3, ...
+- User_ID: Anonymized driver ID (e.g. DL_EV_0042)
 """
 
 import os
@@ -27,21 +29,167 @@ import random
 import datetime
 import csv
 
-# Realistic Boulder charging hub locations
-STATIONS = [
-    {"name": "Boulder Junction Hub", "addr": "2180 Junction Pl", "lat": 40.0212, "lon": -105.2514, "ports": 4, "type": "DC Fast"},
-    {"name": "Pearl Street Parking Garage", "addr": "1500 Pearl St", "lat": 40.0185, "lon": -105.2755, "ports": 6, "type": "Level 2"},
-    {"name": "Alpine-Balsam Community Hub", "addr": "1136 Alpine Ave", "lat": 40.0271, "lon": -105.2812, "ports": 4, "type": "Level 2"},
-    {"name": "Valmont City Park Station", "addr": "5275 Valmont Rd", "lat": 40.0289, "lon": -105.2185, "ports": 2, "type": "Level 2"},
-    {"name": "Table Mesa Park-n-Ride", "addr": "5170 Table Mesa Dr", "lat": 39.9831, "lon": -105.2476, "ports": 8, "type": "DC Fast"},
-    {"name": "Chautauqua Ranger Station", "addr": "900 Baseline Rd", "lat": 39.9989, "lon": -105.2829, "ports": 2, "type": "Level 2"},
-    {"name": "East Boulder Community Center", "addr": "5660 Sioux Dr", "lat": 39.9965, "lon": -105.2223, "ports": 4, "type": "Level 2"},
-    {"name": "CU Boulder Discovery Drive", "addr": "3400 Discovery Dr", "lat": 40.0105, "lon": -105.2442, "ports": 6, "type": "Level 2"},
-    {"name": "Downtown 11th & Walnut Garage", "addr": "1100 Walnut St", "lat": 40.0162, "lon": -105.2818, "ports": 6, "type": "DC Fast"},
-    {"name": "North Boulder Recreation Center", "addr": "3170 Broadway", "lat": 40.0335, "lon": -105.2789, "ports": 4, "type": "Level 2"}
+# Authentic Indian EV charging hubs in Delhi-NCR / Greater Noida (Centered around Bennett University)
+INDIAN_STATIONS = [
+    {
+        "name": "Tata Power EZ Charge - Bennett University Campus",
+        "addr": "Plot Nos 8-11, TechZone II, Greater Noida",
+        "city": "Greater Noida",
+        "state": "UP",
+        "postal": "201310",
+        "lat": 28.4506,
+        "lon": 77.5842,
+        "ports": 6,
+        "type": "DC Fast",
+        "operator": "Tata Power EZ Charge",
+        "power_kw": 60.0
+    },
+    {
+        "name": "Statiq HyperCharge - Pari Chowk Metro Hub",
+        "addr": "Pari Chowk Commercial Hub, Greater Noida",
+        "city": "Greater Noida",
+        "state": "UP",
+        "postal": "201310",
+        "lat": 28.4650,
+        "lon": 77.5100,
+        "ports": 8,
+        "type": "DC Fast",
+        "operator": "Statiq",
+        "power_kw": 120.0
+    },
+    {
+        "name": "Jio-bp pulse - Knowledge Park II Station",
+        "addr": "Knowledge Park II Institutional Area, Greater Noida",
+        "city": "Greater Noida",
+        "state": "UP",
+        "postal": "201306",
+        "lat": 28.4620,
+        "lon": 77.4950,
+        "ports": 4,
+        "type": "Level 2",
+        "operator": "Jio-bp pulse",
+        "power_kw": 22.0
+    },
+    {
+        "name": "BluSmart FastHub - Noida Expressway Sector 137",
+        "addr": "Sector 137 Metro Station, Noida Expressway",
+        "city": "Noida",
+        "state": "UP",
+        "postal": "201305",
+        "lat": 28.5135,
+        "lon": 77.4042,
+        "ports": 8,
+        "type": "DC Fast",
+        "operator": "BluSmart",
+        "power_kw": 120.0
+    },
+    {
+        "name": "Tata Power Superfast - Advant Navis Sector 142",
+        "addr": "Advant Navis Business Park, Sector 142, Noida Expressway",
+        "city": "Noida",
+        "state": "UP",
+        "postal": "201305",
+        "lat": 28.4988,
+        "lon": 77.4190,
+        "ports": 6,
+        "type": "DC Fast",
+        "operator": "Tata Power EZ Charge",
+        "power_kw": 60.0
+    },
+    {
+        "name": "Fortum Charge & Drive - DLF Mall of India Sector 18",
+        "addr": "Sector 18 Commercial Hub, Noida",
+        "city": "Noida",
+        "state": "UP",
+        "postal": "201301",
+        "lat": 28.5672,
+        "lon": 77.3209,
+        "ports": 8,
+        "type": "DC Fast",
+        "operator": "Fortum",
+        "power_kw": 60.0
+    },
+    {
+        "name": "Statiq EV Station - Electronic City Sector 62",
+        "addr": "Sector 62 IT Park, Noida",
+        "city": "Noida",
+        "state": "UP",
+        "postal": "201309",
+        "lat": 28.6280,
+        "lon": 77.3649,
+        "ports": 6,
+        "type": "Level 2",
+        "operator": "Statiq",
+        "power_kw": 22.0
+    },
+    {
+        "name": "Jio-bp pulse - Gaur City Mall Hub (Gr Noida West)",
+        "addr": "Char Murti Chowk, Gaur City 1, Greater Noida West",
+        "city": "Greater Noida",
+        "state": "UP",
+        "postal": "201009",
+        "lat": 28.6080,
+        "lon": 77.4260,
+        "ports": 6,
+        "type": "DC Fast",
+        "operator": "Jio-bp pulse",
+        "power_kw": 60.0
+    },
+    {
+        "name": "BSES EV Fast Charging Plaza - Connaught Place",
+        "addr": "Inner Circle, Connaught Place, New Delhi",
+        "city": "New Delhi",
+        "state": "DL",
+        "postal": "110001",
+        "lat": 28.6315,
+        "lon": 77.2167,
+        "ports": 8,
+        "type": "DC Fast",
+        "operator": "BSES",
+        "power_kw": 150.0
+    },
+    {
+        "name": "BluSmart Supercharger - Aerocity IGI Airport",
+        "addr": "Hospitality District, Aerocity, New Delhi",
+        "city": "New Delhi",
+        "state": "DL",
+        "postal": "110037",
+        "lat": 28.5562,
+        "lon": 77.1000,
+        "ports": 10,
+        "type": "DC Fast",
+        "operator": "BluSmart",
+        "power_kw": 180.0
+    },
+    {
+        "name": "Statiq CyberHub - DLF Phase 2 Gurugram",
+        "addr": "Cyber City Rapid Metro, Gurugram",
+        "city": "Gurugram",
+        "state": "HR",
+        "postal": "122002",
+        "lat": 28.4950,
+        "lon": 77.0890,
+        "ports": 8,
+        "type": "DC Fast",
+        "operator": "Statiq",
+        "power_kw": 120.0
+    },
+    {
+        "name": "Tata Power AC Hub - Okhla Phase III",
+        "addr": "Okhla Industrial Area Phase III, New Delhi",
+        "city": "New Delhi",
+        "state": "DL",
+        "postal": "110020",
+        "lat": 28.5412,
+        "lon": 77.2721,
+        "ports": 4,
+        "type": "Level 2",
+        "operator": "Tata Power EZ Charge",
+        "power_kw": 22.0
+    }
 ]
 
-USERS = [f"USR_{i:04d}" for i in range(1, 151)]
+USERS = [f"IN_EV_{i:04d}" for i in range(1, 151)]
 
 def format_duration(seconds):
     h = seconds // 3600
@@ -55,68 +203,80 @@ def generate_dataset(num_records=5000, output_path="data/raw/boulder_ev_charging
     start_date = datetime.datetime(2026, 1, 1, 6, 0, 0)
     records = []
     
+    random.seed(42)
+    
     for _ in range(num_records):
-        st = random.choice(STATIONS)
+        st = random.choice(INDIAN_STATIONS)
         port_num = random.randint(1, st["ports"])
-        user_id = random.choice(USERS)
+        user = random.choice(USERS)
         
-        # Stagger sessions across a 60-day window
-        day_offset = random.randint(0, 60)
-        # Higher density during peak commuting hours (7-9 AM, 12-2 PM, 5-8 PM)
-        hour_weights = [1, 1, 1, 1, 2, 4, 8, 14, 15, 10, 8, 12, 14, 11, 9, 10, 13, 16, 17, 12, 8, 5, 3, 2]
-        session_hour = random.choices(range(24), weights=hour_weights)[0]
-        session_minute = random.randint(0, 59)
-        session_second = random.randint(0, 59)
+        # Random timestamp over 90 days
+        delta_days = random.randint(0, 90)
         
-        session_start = start_date + datetime.timedelta(days=day_offset, hours=session_hour, minutes=session_minute, seconds=session_second)
+        # Rush hour distribution in Indian metropolitan traffic:
+        # Peak 1: 08:00 - 11:30 (Morning Commute)
+        # Peak 2: 17:30 - 21:30 (Evening Commute)
+        hour_weights = [
+            1, 1, 1, 1, 2, 4,       # 00:00 - 05:00
+            8, 15, 20, 18, 14, 12,  # 06:00 - 11:00
+            12, 10, 10, 12, 16, 22, # 12:00 - 17:00
+            25, 20, 15, 10, 6, 3    # 18:00 - 23:00
+        ]
+        hour = random.choices(range(24), weights=hour_weights)[0]
+        minute = random.randint(0, 59)
+        second = random.randint(0, 59)
         
-        # Duration: DC Fast (20-60 min), Level 2 (1.5 - 6 hours)
+        sess_start = start_date + datetime.timedelta(days=delta_days, hours=hour, minutes=minute, seconds=second)
+        
+        # Battery specs (Nexon EV 30-40 kWh, Tiago EV 19-24 kWh, ZS EV 50 kWh, Ioniq 5 72 kWh)
         if st["type"] == "DC Fast":
-            charging_secs = random.randint(20 * 60, 60 * 60)
-            total_secs = charging_secs + random.randint(5 * 60, 20 * 60) # idle dwell
-            energy_kwh = round((charging_secs / 3600.0) * random.uniform(35.0, 75.0), 2)
+            # 25 min to 65 min charging duration
+            active_charge_sec = random.randint(25 * 60, 65 * 60)
+            dwell_sec = active_charge_sec + random.randint(5 * 60, 20 * 60)
+            energy_kwh = round(random.uniform(22.0, 52.0), 2)
         else:
-            charging_secs = random.randint(90 * 60, 300 * 60)
-            total_secs = charging_secs + random.randint(10 * 60, 90 * 60)
-            energy_kwh = round((charging_secs / 3600.0) * random.uniform(6.0, 11.0), 2)
+            # Level 2 AC: 1.5 to 5 hours
+            active_charge_sec = random.randint(90 * 60, 240 * 60)
+            dwell_sec = active_charge_sec + random.randint(15 * 60, 60 * 60)
+            energy_kwh = round(random.uniform(14.0, 32.0), 2)
             
-        session_end = session_start + datetime.timedelta(seconds=total_secs)
-        
-        # Add slight spatial variance around station coordinates
-        lat = round(st["lat"] + random.uniform(-0.0003, 0.0003), 6)
-        lon = round(st["lon"] + random.uniform(-0.0003, 0.0003), 6)
+        sess_end = sess_start + datetime.timedelta(seconds=dwell_sec)
         
         records.append({
             "Station_Name": st["name"],
             "Address": st["addr"],
-            "City": "Boulder",
-            "State": "CO",
-            "Postal_Code": "80301",
-            "Latitude": lat,
-            "Longitude": lon,
-            "Start_Date_Time": session_start.strftime("%Y-%m-%d %H:%M:%S"),
-            "End_Date_Time": session_end.strftime("%Y-%m-%d %H:%M:%S"),
-            "Total_Duration_hh_mm_ss": format_duration(total_secs),
-            "Charging_Time_hh_mm_ss": format_duration(charging_secs),
-            "Total_Duration_Minutes": round(total_secs / 60.0, 2),
-            "Charging_Duration_Minutes": round(charging_secs / 60.0, 2),
+            "City": st["city"],
+            "State": st["state"],
+            "Postal_Code": st["postal"],
+            "Latitude": st["lat"],
+            "Longitude": st["lon"],
+            "Start_Date_Time": sess_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "End_Date_Time": sess_end.strftime("%Y-%m-%d %H:%M:%S"),
+            "Total_Duration_hh_mm_ss": format_duration(dwell_sec),
+            "Charging_Time_hh_mm_ss": format_duration(active_charge_sec),
+            "Total_Duration_Minutes": round(dwell_sec / 60.0, 2),
+            "Charging_Duration_Minutes": round(active_charge_sec / 60.0, 2),
             "Energy__kWh_": energy_kwh,
             "Port_Type": st["type"],
             "Port_Number": port_num,
-            "User_ID": user_id
+            "User_ID": user
         })
         
-    # Sort chronological by start time
-    records.sort(key=lambda r: r["Start_Date_Time"])
+    fieldnames = [
+        "Station_Name", "Address", "City", "State", "Postal_Code",
+        "Latitude", "Longitude", "Start_Date_Time", "End_Date_Time",
+        "Total_Duration_hh_mm_ss", "Charging_Time_hh_mm_ss",
+        "Total_Duration_Minutes", "Charging_Duration_Minutes",
+        "Energy__kWh_", "Port_Type", "Port_Number", "User_ID"
+    ]
     
-    headers = list(records[0].keys())
     with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=headers)
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(records)
         
-    print(f"Successfully generated {len(records)} charging sessions to '{output_path}'.")
+    print(f"[DataGen] Successfully generated {len(records)} authentic Indian EV charging records.")
+    print(f"[DataGen] Saved to: {output_path}")
 
 if __name__ == "__main__":
-    generate_dataset(5000, "data/raw/boulder_ev_charging_data.csv")
-
+    generate_dataset()

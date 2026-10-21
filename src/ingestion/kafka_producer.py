@@ -1,7 +1,8 @@
 """
 kafka_producer.py
 -----------------
-Simulates real-time streaming telemetry and charging session plug-in events.
+Simulates real-time streaming telemetry and charging session plug-in events
+for Indian EV charging networks (focusing on Greater Noida / Delhi-NCR around Bennett University).
 Can emit messages to an Apache Kafka topic or to a local streaming file buffer.
 """
 
@@ -13,10 +14,11 @@ import os
 import sys
 
 STATIONS = [
-    {"name": "Boulder Junction Hub", "lat": 40.0212, "lon": -105.2514, "ports": 4, "type": "DC Fast", "cap_kw": 200},
-    {"name": "Pearl Street Parking Garage", "lat": 40.0185, "lon": -105.2755, "ports": 6, "type": "Level 2", "cap_kw": 43.2},
-    {"name": "Table Mesa Park-n-Ride", "lat": 39.9831, "lon": -105.2476, "ports": 8, "type": "DC Fast", "cap_kw": 400},
-    {"name": "Alpine-Balsam Community Hub", "lat": 40.0271, "lon": -105.2812, "ports": 4, "type": "Level 2", "cap_kw": 28.8}
+    {"name": "Tata Power EZ Charge - Bennett University Campus", "lat": 28.4506, "lon": 77.5842, "ports": 6, "type": "DC Fast", "cap_kw": 360},
+    {"name": "Statiq HyperCharge - Pari Chowk Metro Hub", "lat": 28.4650, "lon": 77.5100, "ports": 8, "type": "DC Fast", "cap_kw": 480},
+    {"name": "BluSmart FastHub - Noida Expressway Sector 137", "lat": 28.5135, "lon": 77.4042, "ports": 8, "type": "DC Fast", "cap_kw": 480},
+    {"name": "Jio-bp pulse - Knowledge Park II Station", "lat": 28.4620, "lon": 77.4950, "ports": 4, "type": "Level 2", "cap_kw": 88},
+    {"name": "Fortum Charge & Drive - DLF Mall of India Sector 18", "lat": 28.5672, "lon": 77.3209, "ports": 8, "type": "DC Fast", "cap_kw": 480}
 ]
 
 def generate_telemetry_event():
@@ -25,7 +27,7 @@ def generate_telemetry_event():
     is_active = random.choice([True, True, True, False])
     
     if is_active:
-        current_kw = round(random.uniform(25.0, 50.0) if station["type"] == "DC Fast" else random.uniform(3.3, 7.2), 2)
+        current_kw = round(random.uniform(30.0, 58.0) if station["type"] == "DC Fast" else random.uniform(5.5, 7.2), 2)
         soc_pct = random.randint(15, 95)
     else:
         current_kw = 0.0
@@ -48,7 +50,7 @@ def stream_events(num_events=50, delay_sec=0.2, output_dir="data/streaming"):
     os.makedirs(output_dir, exist_ok=True)
     buffer_file = os.path.join(output_dir, "live_stream_buffer.jsonl")
     
-    print(f"[Stream Producer] Starting telemetry generation ({num_events} events)...")
+    print(f"[Stream Producer] Starting Indian telemetry generation ({num_events} events)...")
     
     with open(buffer_file, "a", encoding="utf-8") as f:
         for i in range(num_events):
@@ -63,4 +65,3 @@ def stream_events(num_events=50, delay_sec=0.2, output_dir="data/streaming"):
 
 if __name__ == "__main__":
     stream_events()
-
