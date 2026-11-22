@@ -1,0 +1,49 @@
+:root{font-family:"Trebuchet MS",Arial,sans-serif;color:#232943;background:#f8f6f0}*{box-sizing:border-box}body{margin:0}header,main,footer{max-width:1130px;margin:auto;padding:24px clamp(18px,4vw,50px)}header,footer,nav{display:flex;align-items:center;justify-content:space-between;gap:20px}header{border-bottom:1px solid #d9d9d2}.brand{font-size:24px;font-weight:900;text-decoration:none;color:inherit}.brand b,i{background:#c8f280;border-radius:12px;padding:4px 11px;color:#192a26}a{color:#364c77;text-underline-offset:4px}nav a,footer a{font-weight:bold}main{min-height:75vh}.hero{position:relative;background:#d4d0fe;border-radius:28px;overflow:hidden;padding:52px 5%;display:grid;grid-template-columns:1fr 1fr;align-items:center}.hero h1{margin:0;font-size:clamp(48px,6.5vw,91px);line-height:.97;letter-spacing:-.075em}.hero em{color:#454190;font-weight:700}.hero p{max-width:350px}.art{position:relative;min-height:210px;isolation:isolate}.sun{position:absolute;background:#ffee9b;width:112px;height:112px;border-radius:100%;right:8%;top:0}.road{position:absolute;inset:48% -30% -20% -8%;background:#716ab7;transform:rotate(-9deg);border-block:8px solid #a29bd4}.road:after{content:"";position:absolute;inset:56% 0 auto;border-top:4px dashed #ece4ab}.car{position:absolute;font-size:clamp(75px,10vw,150px);bottom:7%;left:15%;transform:scaleX(-1)}.plug{position:absolute;right:3%;bottom:26%;background:#c8f280;font-size:42px;font-weight:bold;padding:0 12px;border-radius:12px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px}.cards a,.panel,details,article{display:block;border:1px solid #d8d9ce;background:#fffefa;border-radius:20px;padding:24px;color:inherit}.cards a{text-decoration:none}.cards a:hover{border-color:#626195;transform:translateY(-2px)}i{font-size:26px;font-style:normal;display:inline-block}.cards a:nth-child(2) i{background:#ffdcab}.cards a:nth-child(3) i{background:#ddd6ff}h1{font-size:clamp(40px,6vw,66px);letter-spacing:-.055em;margin:24px 0}h2,summary{font-size:24px;letter-spacing:-.035em}p,output,li{font-size:17px;line-height:1.55}summary,button{cursor:pointer;font-weight:700}details,article{margin:14px 0}form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));align-items:end;gap:16px;margin:20px 0}label{display:grid;gap:7px;font-weight:bold}input,textarea,button,select{font:inherit;padding:12px;border:1px solid #b8bdbe;border-radius:10px;max-width:100%;width:100%}button{background:#323957;color:white;border:0;width:fit-content}button:disabled{opacity:.6}.panel,article{max-width:850px}li{padding:10px 0}footer{border-top:1px solid #d9d9d2}section[hidden]{display:none}@media(max-width:680px){.hero{grid-template-columns:1fr;padding:32px 24px}.art{min-height:145px}.cards{grid-template-columns:1fr}header,nav{gap:10px}nav{font-size:14px}}
+.map{height:320px;border-radius:16px;margin:16px 0;isolation:isolate}
+.metrics{display:flex;flex-wrap:wrap;gap:20px}.metrics p{margin:0 0 18px}.metrics strong{display:block;font-size:clamp(26px,4vw,42px);color:#484391}
+.station-actions{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.station-actions select{width:auto}
+.assumptions{grid-column:1/-1;padding:12px 16px;margin:0;background:#f6f6f0}.assumptions summary{font-size:16px}.assumptions label{margin-top:12px}.assumptions input{max-width:18rem}
+.grid-work{max-width:none}.grid-work>label{max-width:40rem;margin-block:12px}.grid-work .metrics{margin-block:20px;gap:16px}.grid-work .metrics p{background:#f1f2fa;border-radius:14px;padding:14px}.grid-work .metrics strong{font-size:24px}.demand-row{display:grid;grid-template-columns:65px 1fr auto;gap:12px;align-items:center;padding:6px 0}.demand-row meter{width:100%;height:20px}#shiftResult{border-left:5px solid #8679cb;padding:1px 18px;background:#f6f5fc;border-radius:6px}
+:root {--chrome:#bbccca;--cream:#fff3cf;background:#172629;color:#243235}
+body {min-height:100vh;background:linear-gradient(180deg,#0c202ae8,#16292aca 55%,#172629ef),url("cars/springs.webp") center/cover fixed}
+header,main,footer {max-width:1240px}
+header,footer {color:var(--cream);border-color:#bbc8c066}
+header {border-bottom:3px double var(--chrome);flex-wrap:wrap}
+nav {flex-wrap:wrap;gap:clamp(9px,2vw,26px)}
+header a,footer a {color:var(--cream)}
+nav a {text-decoration:none;padding-block:6px}
+nav a:hover {color:#84e2db;text-decoration:underline}
+.brand {background:linear-gradient(#e44135,#8e1319);border:3px double #f0e1b6;color:#fff5d9;padding:2px 16px 4px 8px;border-radius:7px 2px 12px 4px;transform:skew(-8deg);font:italic 900 clamp(22px,3vw,33px)/1.1 Georgia,serif;text-shadow:1px 2px #671a19;box-shadow:2px 3px #060f10}
+.brand b {background:none;color:#ffd44e;padding:0 3px}
+.hero {isolation:isolate;min-height:clamp(320px,37vw,460px);display:flex;align-items:center;padding:clamp(23px,5vw,68px);background:#a42123;border-radius:18px;border:3px solid var(--chrome);box-shadow:0 6px 0 #06171c}
+.hero-car {position:absolute;z-index:-2;right:0;top:0;width:66%;height:100%;object-fit:cover;object-position:center 59%}
+.hero::before {content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(102deg,#96171a 0%,#af2121 37%,#a02121e6 42%,transparent 59%)}
+.hero h1,main>section>h1 {font-family:Impact,"Arial Black",sans-serif;letter-spacing:-.025em;text-transform:uppercase;font-style:italic}
+.hero h1 {font-size:clamp(50px,6.4vw,93px);color:#fff3cd;text-shadow:3px 4px 0 #671a18}
+.hero em {color:#ffd45b}
+.hero p {color:#fff5df;max-width:min(36vw,350px);margin-bottom:0}
+.hero::after,main>section:not(#home)>h1::after {content:"";position:absolute;bottom:0;left:0;right:0;height:8px;background:repeating-conic-gradient(#f6eace 0 25%,#172629 0 50%) 0 0/16px 16px}
+.cards {gap:20px;margin:28px 0}.cards a {position:relative;overflow:hidden;padding:0 22px 20px;border-radius:14px;background:#fff2d4;border:2px solid #c6c9b9;box-shadow:0 5px #0c191c;transition:transform .18s}
+.cards a::before {content:"";display:block;height:clamp(125px,13vw,170px);margin:0 -22px 18px;background:var(--scene) center 54%/cover;border-bottom:5px solid var(--accent)}
+.cards a:nth-child(1), #driver {--scene:url("cars/commuter.jpg");--accent:#c73023}
+.cards a:nth-child(2), #grid {--scene:url("cars/operator.jpg");--accent:#bd682d}
+.cards a:nth-child(3), #municipal {--scene:url("cars/planner.jpg");--accent:#177b83}
+#sources {--scene:url("cars/springs.webp");--accent:#a4422c}
+.cards i {display:none}.cards h2 {margin:0}.cards p {margin:6px 0 0}
+.cards a:hover {transform:translateY(-4px);border-color:#f4c35b}
+main>section:not(#home)>h1 {position:relative;overflow:hidden;display:flex;align-items:flex-end;color:var(--cream);min-height:clamp(144px,18vw,210px);padding:24px 30px;margin:0 0 18px;font-size:clamp(35px,5vw,70px);text-shadow:2px 3px #081c21;border:2px solid var(--chrome);border-radius:15px;background:linear-gradient(90deg,#11363b 8%,#17383bd6 37%,transparent 73%),var(--scene) center 55%/cover}
+article,.panel,details {background:#fff3d9;border:2px solid #c6c7b6;border-radius:12px;color:#233235}
+h2,summary {color:#783121}main article a,details a {color:#135e68}button {background:#a62122;color:white;border:1px solid #811518;border-radius:6px;font-weight:700}
+button:hover {background:#842023}input,textarea,select {background:#fffcf1;border-color:#8a9994;border-radius:6px}
+main>section>p {color:#fff4dc}.assumptions,.grid-work .metrics p {background:#e4ece0}
+.metrics strong {color:#14646a}#shiftResult {border-color:#b52d25;background:#f4e3bc}
+#routeResult details ol {max-height:26rem;overflow:auto}
+:focus-visible {outline:3px solid #d47b0c;outline-offset:3px}
+@media(max-width:680px){
+  header {gap:14px}.hero {min-height:390px;align-items:flex-end;padding:22px}
+  .hero-car {width:100%;height:74%;object-position:center 48%}
+  .hero::before {background:linear-gradient(to top,#912021 3%,#ac2825 23%,#ad2824d9 34%,transparent 58%)}
+  .hero h1 {font-size:47px}.hero h1 br {display:none}.hero p {max-width:100%}
+  .cards a::before {height:148px}main>section:not(#home)>h1 {padding:18px}
+}
+@media(prefers-reduced-motion:reduce){.cards a{transition:none}}

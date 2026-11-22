@@ -1,0 +1,1 @@
+window.voltPulseContact = { url: "", publishableKey: "" };
