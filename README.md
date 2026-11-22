@@ -93,8 +93,11 @@ bigdata_project/
 │   │   ├── train_congestion_classifier.py
 │   │   ├── train_duration_regressor.py
 │   │   └── train_spatial_clustering.py
-│   └── dashboard/           # Unified multi-persona dashboard app
-│       └── app.py
+│   ├── dashboard/           # Plot and chart generation utilities
+│   │   └── generate_plots.py
+│   └── web/                 # Enterprise Ink Wash Web Application
+│       ├── index.html       # Full-stack Portal (Driver, Admin, Planner, Proofs)
+│       └── server.py        # Lightweight Web Server (Port 3000)
 ├── notebooks/               # Jupyter / PySpark exploratory data analysis
 │   └── 01_eda_and_profiling.ipynb
 ├── report/                  # Project report chapters (LaTeX / Word / Markdown)
@@ -103,8 +106,20 @@ bigdata_project/
 │   ├── Chapter3_Methodology_Design.md
 │   ├── Chapter4_Implementation_Results.md
 │   └── Chapter5_Conclusion_FutureWork.md
-└── requirements.txt
+├── requirements.txt
+└── PROJECT_DESC.md          # Exhaustive academic master project specification
 ```
+
+---
+
+## 🚀 Quickstart & Server Launch
+
+### Launch Enterprise Web Application (Port 3000)
+```bash
+python src/web/server.py
+# Access via browser at: http://localhost:3000
+```
+* **Features:** Ink Wash Sumi-e theme, Role-Based Persona Gate, Haversine GPS proximity radar, Linear SoC battery gauge, Leaflet GIS mapping, Long-distance highway corridors, exact Google Maps universal place integration, and scientific data proof audit.
 
 ---
 
