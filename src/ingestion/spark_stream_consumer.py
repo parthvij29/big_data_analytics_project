@@ -1,13 +1,12 @@
 """
 spark_stream_consumer.py
 ------------------------
-Simulates a real-time Spark Structured Streaming consumer.
-Performs rolling windowed power aggregations and detects transformer overload peaks.
+Replays a saved JSONL stream fixture, summing its event readings and flagging
+individual readings above the demonstration threshold.
 """
 
 import os
 import json
-import time
 
 def process_stream_batch(streaming_file="data/streaming/live_stream_buffer.jsonl"):
     if not os.path.exists(streaming_file):
@@ -31,9 +30,9 @@ def process_stream_batch(streaming_file="data/streaming/live_stream_buffer.jsonl
                 overload_alerts.append(f"High Draw Warning: {evt['station_name']} Port #{evt['port_number']} drawing {evt['current_power_draw_kw']} kW")
                 
     print(f"\n================ STREAM AGGREGATION SUMMARY ================")
-    print(f"Total Instantaneous Grid Draw : {total_draw_kw:.2f} kW")
-    print(f"Active Connected Ports        : {active_ports}")
-    print(f"Total Alerts Triggered        : {len(overload_alerts)}")
+    print(f"Sum of Event Power Values    : {total_draw_kw:.2f} kW")
+    print(f"Occupied Event Rows          : {active_ports}")
+    print(f"Events Above 45 kW           : {len(overload_alerts)}")
     for a in overload_alerts[:3]:
         print(f"  [ALERT] {a}")
     print(f"============================================================")

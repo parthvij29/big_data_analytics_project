@@ -64,7 +64,7 @@ def run_etl(input_csv="data/raw/boulder_ev_charging_data.csv", output_dir="data/
             for row in reader:
                 start_dt = datetime.strptime(row["Start_Date_Time"], "%Y-%m-%d %H:%M:%S")
                 hour = start_dt.hour
-                dow = (start_dt.weekday() + 2) % 7 # 1=Sun, 7=Sat
+                dow = (start_dt.weekday() + 1) % 7 + 1  # 1=Sun, 7=Sat
                 is_weekend = 1 if dow in (1, 7) else 0
                 is_dcfc = 1 if row["Port_Type"] == "DC Fast" else 0
                 

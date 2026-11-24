@@ -3,7 +3,7 @@ kafka_producer.py
 -----------------
 Simulates real-time streaming telemetry and charging session plug-in events
 for Indian EV charging networks (focusing on Greater Noida / Delhi-NCR around Bennett University).
-Can emit messages to an Apache Kafka topic or to a local streaming file buffer.
+Appends simulated messages to a local JSONL buffer for replay.
 """
 
 import time

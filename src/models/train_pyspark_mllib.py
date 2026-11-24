@@ -24,10 +24,8 @@ def run_pyspark_mllib():
         from pyspark.ml.classification import RandomForestClassifier
         from pyspark.ml.clustering import KMeans
         from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator, ClusteringEvaluator
-    except ImportError:
-        print("[PySpark MLlib] Notice: PySpark is not installed or Java/Hadoop environment requires configuration.")
-        print("[PySpark MLlib] This script contains the production PySpark MLlib pipeline code for submission and cluster deployment.")
-        return
+    except ImportError as exc:
+        raise SystemExit(f"[PySpark MLlib] Could not import PySpark MLlib: {exc}") from exc
 
     print("[PySpark MLlib] Initializing SparkSession...")
     spark = SparkSession.builder \

@@ -2,9 +2,9 @@
 generate_plots.py
 -----------------
 Generates publication-quality evaluation charts and plots for the report and PPT:
-1. Hourly Grid Energy Load Curve (Actual vs GBT Forecast)
-2. Model Comparative Bar Chart (RMSE & R2)
-3. Geospatial Cluster Map & Centroids
+1. Session energy grouped by start hour
+2. Held-out regression benchmark comparison
+3. Sample station coordinates and benchmark centroids
 """
 
 import os
@@ -21,18 +21,14 @@ def generate_charts(output_dir="data/processed/plots"):
     csv_path = "data/processed/cleaned_sessions.csv"
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
-        hourly = df.groupby("Hour")["Energy_kWh"].sum().reset_index()
-        hourly["GBT_Pred"] = hourly["Energy_kWh"] * np.random.uniform(0.96, 1.04, len(hourly))
+        hourly = df.groupby("Hour")["Energy_kWh"].sum().reindex(range(24), fill_value=0)
         
         plt.figure(figsize=(10, 5))
-        plt.plot(hourly["Hour"], hourly["Energy_kWh"], marker="o", color="#1f77b4", linewidth=2.5, label="Actual Aggregated Demand (kWh)")
-        plt.plot(hourly["Hour"], hourly["GBT_Pred"], marker="s", linestyle="--", color="#ff7f0e", linewidth=2, label="PySpark GBT Forecast (kWh)")
-        plt.axhline(y=hourly["Energy_kWh"].max() * 1.12, color="red", linestyle=":", label="Transformer Safe Capacity Threshold (85%)")
-        plt.title("VoltPulse: 24-Hour Substation Grid Load Profile & Forecast", fontsize=13, fontweight="bold")
-        plt.xlabel("Hour of Day (0 - 23)", fontsize=11)
-        plt.ylabel("Total Energy Draw (kWh)", fontsize=11)
-        plt.xticks(range(0, 24))
-        plt.legend(frameon=True)
+        plt.bar(hourly.index, hourly, color="#067467")
+        plt.title("Energy delivered by session start hour", fontsize=13, fontweight="bold")
+        plt.xlabel("Session start hour", fontsize=11)
+        plt.ylabel("Total session energy (kWh)", fontsize=11)
+        plt.xticks(range(24))
         plt.tight_layout()
         plot1 = os.path.join(output_dir, "hourly_load_profile.png")
         plt.savefig(plot1, dpi=300)
@@ -47,23 +43,13 @@ def generate_charts(output_dir="data/processed/plots"):
             
         models = ["GBT Regressor", "RF Regressor"]
         rmse_vals = [m["Model_1_GBT_Regressor"]["RMSE"], m["Model_2_RF_Regressor"]["RMSE"]]
-        r2_vals = [m["Model_1_GBT_Regressor"]["R2_Score"], m["Model_2_RF_Regressor"]["R2_Score"]]
-        
-        fig, ax1 = plt.subplots(figsize=(7, 4.5))
-        x = np.arange(len(models))
-        width = 0.35
-        
-        rects1 = ax1.bar(x - width/2, rmse_vals, width, label="RMSE (Lower is Better)", color="#2ca02c")
-        ax1.set_ylabel("RMSE (kWh)", color="#2ca02c", fontsize=11)
-        ax1.set_xticks(x)
-        ax1.set_xticklabels(models, fontsize=11, fontweight="bold")
-        
-        ax2 = ax1.twinx()
-        rects2 = ax2.bar(x + width/2, r2_vals, width, label="R² Score (Higher is Better)", color="#1f77b4")
-        ax2.set_ylabel("R² Score", color="#1f77b4", fontsize=11)
-        ax2.set_ylim(0, 1.0)
-        
-        plt.title("Comparative Evaluation: PySpark GBT vs. Random Forest Regressor", fontsize=12, fontweight="bold")
+        fig, axis = plt.subplots(figsize=(8, 4.5))
+        bars = axis.barh(models, rmse_vals, color=["#39759a", "#067467"])
+        axis.invert_yaxis()
+        axis.set_xlim(0, max(rmse_vals) * 1.2)
+        axis.bar_label(bars, fmt="%.4f", padding=5)
+        axis.set_xlabel("RMSE (kWh)")
+        axis.set_title("Session energy prediction error (scikit-learn benchmark)", fontsize=12, fontweight="bold")
         fig.tight_layout()
         plot2 = os.path.join(output_dir, "model_comparison_bar.png")
         plt.savefig(plot2, dpi=300)
@@ -77,9 +63,10 @@ def generate_charts(output_dir="data/processed/plots"):
         centroids = np.array(m["Model_5_KMeans_Clustering"]["Recommended_Centroids_Lat_Lon"])
         
         plt.figure(figsize=(8, 6))
-        plt.scatter(df["Longitude"], df["Latitude"], alpha=0.3, c="#1f77b4", s=30, label="Existing Charging Sessions")
-        plt.scatter(centroids[:, 1], centroids[:, 0], c="red", marker="X", s=200, edgecolors="black", linewidths=1.5, label="AI-Recommended Hub Centroids (K=4)")
-        plt.title("PySpark K-Means Spatial Siting Optimization (Boulder, CO)", fontsize=13, fontweight="bold")
+        coords = df[["Latitude", "Longitude"]].drop_duplicates()
+        plt.scatter(coords["Longitude"], coords["Latitude"], c="#39759a", s=30, label="Sample station location")
+        plt.scatter(centroids[:, 1], centroids[:, 0], c="#db6a26", marker="s", s=100, label="Benchmark centroid")
+        plt.title("Station coordinates and K-means centroids", fontsize=13, fontweight="bold")
         plt.xlabel("Longitude", fontsize=11)
         plt.ylabel("Latitude", fontsize=11)
         plt.legend(frameon=True)
