@@ -1,0 +1,2 @@
+{"event_type": "weather_telemetry", "city": "Noida", "timestamp": "2026-11-25T12:00", "temperature_c": 23.6, "humidity_pct": 44, "solar_irradiance_wm2": 605.0, "wind_speed_kmh": 2.8, "source": "open-meteo.com"}
+{"event_type": "weather_telemetry", "city": "Noida", "timestamp": "2026-11-25T12:30", "temperature_c": 23.5, "humidity_pct": 44, "solar_irradiance_wm2": 605.0, "wind_speed_kmh": 3.3, "source": "open-meteo.com"}

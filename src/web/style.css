@@ -47,3 +47,8 @@ main>section>p {color:#fff4dc}.assumptions,.grid-work .metrics p {background:#e4
   .cards a::before {height:148px}main>section:not(#home)>h1 {padding:18px}
 }
 @media(prefers-reduced-motion:reduce){.cards a{transition:none}}
+.congestion-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:14px}
+.badge-low{background:#d4f3d8;color:#14532d}
+.badge-mod{background:#fef0c3;color:#78350f}
+.badge-high{background:#fcd5d5;color:#7f1d1d}
+#streamAlerts li{color:#7f1d1d;font-weight:700}

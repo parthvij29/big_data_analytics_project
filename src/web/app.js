@@ -367,3 +367,495 @@ $('gridSite').onchange=selectGridStation;
 $('shift').oninput=updateShift;
 $('shift').onsubmit=e=>e.preventDefault();
 gridStationOptions();
+
+(function initBigDataAnalytics() {
+  const analytics = window.voltPulseAnalytics;
+  if (!analytics) return;
+
+  // 1. Driver: Congestion & Peak Hours check
+  const congForm = $('congestionCheck');
+  const congOut = $('congestionResult');
+  if (congForm && congOut) {
+    const hourSel = congForm.elements.hour;
+    for (let h = 0; h < 24; h++) {
+      const label = String(h).padStart(2, '0') + ':00 – ' + String(h).padStart(2, '0') + ':59';
+      hourSel.add(new Option(label, h));
+    }
+    hourSel.value = String(new Date().getHours());
+    function renderCongestion() {
+      const h = Number(hourSel.value);
+      const portType = congForm.elements.portType.value;
+      const { highHours, moderateHours, accuracy, f1 } = analytics.congestionModel;
+      let level = 'Low', cls = 'badge-low', advice = 'Off-peak window — chargers are generally free with minimal wait.';
+      if (highHours.includes(h)) {
+        level = 'High'; cls = 'badge-high'; advice = 'Peak commute window — expect waiting queues, especially on ' + portType + ' bays.';
+      } else if (moderateHours.includes(h)) {
+        level = 'Moderate'; cls = 'badge-mod'; advice = 'Midday demand — moderate bay occupancy expected.';
+      }
+      const sessions = analytics.hourlySessions[h] ?? 0;
+      const energy = analytics.hourlyEnergyKwh[h] ?? 0;
+      congOut.replaceChildren();
+      const badge = el('span', level + ' congestion');
+      badge.className = 'congestion-badge ' + cls;
+      const summary = el('p', '');
+      summary.append(badge, ' · ', advice);
+      const stats = el('p', 'Simulated hour profile: ' + numberIN.format(sessions) + ' sessions (' + numberIN.format(energy) + ' kWh) · Model accuracy ' + (accuracy * 100).toFixed(1) + '% (F1 ' + f1 + ').');
+      congOut.append(summary, stats);
+    }
+    congForm.onchange = renderCongestion;
+    renderCongestion();
+  }
+
+  // 2. Grid: Live Stream Power & Overload Monitor (Live Apache Kafka + JSONL replay fallback)
+  const streamMetrics = $('streamMetrics');
+  const streamAlerts = $('streamAlerts');
+  const streamLatest = $('streamLatest');
+  const streamSource = $('streamSource');
+  const streamProduce = $('streamProduce');
+  const streamToggle = $('streamToggle');
+  const streamRestart = $('streamRestart');
+  if (streamMetrics && streamAlerts) {
+    const events = analytics.streamEvents || [];
+    const threshold = analytics.streamSummary.thresholdKw;
+    let idx = 0, totalPower = 0, occCount = 0, alertList = [], paused = false, liveKafkaMode = false;
+
+    function drawStreamUI(countLabel, powerSum, occVal, alertsArr, latestText) {
+      streamMetrics.replaceChildren();
+      for (const [label, val] of [
+        [liveKafkaMode ? 'Kafka events received' : 'Events replayed', countLabel],
+        ['Sum of event power', numberIN.format(powerSum) + ' kW'],
+        ['Occupied event rows', String(occVal)],
+        ['Alerts (> ' + threshold + ' kW)', String(alertsArr.length)]
+      ]) {
+        const cell = el('p', label);
+        cell.append(el('strong', val));
+        streamMetrics.append(cell);
+      }
+      if (streamLatest && latestText) streamLatest.textContent = latestText;
+      streamAlerts.replaceChildren();
+      for (const a of alertsArr) {
+        streamAlerts.append(el('li', '[ALERT @ ' + a.t + '] High Draw Warning: ' + a.station + ' Port #' + a.port + ' drawing ' + a.kw + ' kW'));
+      }
+    }
+
+    function renderFallbackState(evt) {
+      const latestText = evt
+        ? 'Latest packet [' + evt.t + ']: ' + evt.station + ' · Port #' + evt.port + ' (' + evt.type + ') · ' + (evt.occ ? evt.kw + ' kW · SoC ' + evt.soc + '%' : 'Idle (0 kW)')
+        : 'Starting local JSONL replay…';
+      drawStreamUI(idx + ' / ' + events.length, totalPower, occCount, alertList, latestText);
+    }
+
+    function resetStream() {
+      idx = 0; totalPower = 0; occCount = 0; alertList = [];
+      renderFallbackState(null);
+    }
+
+    function stepFallback() {
+      if (paused || liveKafkaMode || !events.length) return;
+      if (idx >= events.length) resetStream();
+      const evt = events[idx++];
+      totalPower += evt.kw;
+      if (evt.occ) occCount++;
+      if (evt.kw > threshold) alertList.push(evt);
+      renderFallbackState(evt);
+    }
+
+    async function pollLiveKafka() {
+      if (paused) return;
+      try {
+        const r = await fetch('/api/stream', { cache: 'no-store', signal: AbortSignal.timeout(2000) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        if (data.source === 'kafka') {
+          liveKafkaMode = true;
+          if (streamSource) {
+            streamSource.textContent = 'Source: Live Apache Kafka broker (' + data.broker + ' · topic ' + data.topic + '), flagging readings above ' + threshold + ' kW.';
+          }
+          if (streamRestart) streamRestart.hidden = true;
+          const e = data.latest_event;
+          const latestText = e
+            ? 'Live Kafka packet [' + String(e.timestamp || '').split(' ').pop() + ']: ' + e.station_name + ' · Port #' + e.port_number + ' (' + e.port_type + ') · ' + (e.is_occupied ? e.current_power_draw_kw + ' kW · SoC ' + e.battery_soc_pct + '%' : 'Idle (0 kW)')
+            : 'Connected to live Kafka topic (' + data.topic + '). Click "Produce 10 Kafka events" or run kafka_producer.py.';
+          drawStreamUI(String(data.events_count), data.total_power_kw, data.occupied_ports, data.alerts || [], latestText);
+          return;
+        }
+      } catch {}
+      if (liveKafkaMode) {
+        liveKafkaMode = false;
+        if (streamRestart) streamRestart.hidden = false;
+      }
+      if (streamSource) {
+        streamSource.textContent = 'Kafka broker offline — showing local JSONL replay fallback (live_stream_buffer.jsonl).';
+      }
+    }
+
+    if (streamProduce) {
+      streamProduce.onclick = async () => {
+        streamProduce.disabled = true;
+        try {
+          const r = await fetch('/api/stream/produce', { method: 'POST' });
+          if (r.ok && streamLatest) streamLatest.textContent = 'Streaming 10 new Indian EV telemetry events to Kafka…';
+        } catch {}
+        setTimeout(() => { streamProduce.disabled = false; }, 3500);
+      };
+    }
+
+    if (streamToggle) {
+      streamToggle.onclick = () => {
+        paused = !paused;
+        streamToggle.textContent = paused ? 'Resume stream' : 'Pause stream';
+      };
+    }
+    if (streamRestart) {
+      streamRestart.onclick = () => {
+        resetStream();
+        if (paused) { paused = false; if (streamToggle) streamToggle.textContent = 'Pause stream'; }
+      };
+    }
+
+    resetStream();
+    pollLiveKafka();
+    setInterval(pollLiveKafka, 600);
+    setInterval(stepFallback, 450);
+  }
+
+  // 3. Grid: Hourly Load Profile
+  const hourlyBars = $('hourlyBars');
+  if (hourlyBars) {
+    const maxKwh = Math.max(...analytics.hourlyEnergyKwh);
+    hourlyBars.replaceChildren();
+    for (let h = 0; h < 24; h++) {
+      const kwh = analytics.hourlyEnergyKwh[h];
+      const count = analytics.hourlySessions[h];
+      const row = el('div', '');
+      row.className = 'demand-row';
+      const bar = el('meter', '');
+      bar.max = maxKwh;
+      bar.value = kwh;
+      bar.setAttribute('aria-label', 'Energy at hour ' + h);
+      row.append(
+        el('span', String(h).padStart(2, '0') + ':00'),
+        bar,
+        el('span', numberIN.format(kwh) + ' kWh (' + count + ')')
+      );
+      hourlyBars.append(row);
+    }
+  }
+
+  // 4. Municipal: K-Means Optimal Hub Siting (Delhi NCR benchmark + any Indian city)
+  const hubMetrics = $('hubMetrics');
+  const hubList = $('hubList');
+  const hubMapHost = $('hubMap');
+  const hubForm = $('hubForm');
+  const hubReset = $('hubReset');
+  const hubSummary = $('hubSummary');
+  let hubMap = null;
+  let hubLayer = null;
+  let currentHubView = null;
+
+  function sqDist(a, b) {
+    return (a.lat - b.lat) ** 2 + (a.lon - b.lon) ** 2;
+  }
+
+  function runKMeans(points, k) {
+    // Deterministic farthest-point initialization for repeatable cluster centroids
+    const sorted = [...points].sort((a, b) => (a.lat - b.lat) || (a.lon - b.lon));
+    const centroids = [{ lat: sorted[0].lat, lon: sorted[0].lon }];
+    while (centroids.length < k) {
+      let best = sorted[0], bestD = -1;
+      for (const p of sorted) {
+        const minD = Math.min(...centroids.map(c => sqDist(p, c)));
+        if (minD > bestD) { bestD = minD; best = p; }
+      }
+      centroids.push({ lat: best.lat, lon: best.lon });
+    }
+
+    let assign = new Array(points.length).fill(0);
+    for (let iter = 0; iter < 50; iter++) {
+      let changed = false;
+      for (let i = 0; i < points.length; i++) {
+        let bestC = 0, bestD = Infinity;
+        for (let c = 0; c < k; c++) {
+          const d = sqDist(points[i], centroids[c]);
+          if (d < bestD) { bestD = d; bestC = c; }
+        }
+        if (assign[i] !== bestC) { assign[i] = bestC; changed = true; }
+      }
+      const sums = Array.from({ length: k }, () => ({ lat: 0, lon: 0, n: 0 }));
+      for (let i = 0; i < points.length; i++) {
+        sums[assign[i]].lat += points[i].lat;
+        sums[assign[i]].lon += points[i].lon;
+        sums[assign[i]].n++;
+      }
+      for (let c = 0; c < k; c++) {
+        if (sums[c].n > 0) {
+          centroids[c] = { lat: sums[c].lat / sums[c].n, lon: sums[c].lon / sums[c].n, count: sums[c].n };
+        } else {
+          centroids[c].count = 0;
+        }
+      }
+      if (!changed) break;
+    }
+
+    let inertia = 0;
+    for (let i = 0; i < points.length; i++) inertia += sqDist(points[i], centroids[assign[i]]);
+
+    let silSum = 0, silCount = 0;
+    if (k > 1 && points.length > k) {
+      for (let i = 0; i < points.length; i++) {
+        const ci = assign[i];
+        const clusterDist = Array.from({ length: k }, () => ({ sum: 0, n: 0 }));
+        for (let j = 0; j < points.length; j++) {
+          if (i === j) continue;
+          const cj = assign[j];
+          clusterDist[cj].sum += Math.sqrt(sqDist(points[i], points[j]));
+          clusterDist[cj].n++;
+        }
+        if (clusterDist[ci].n === 0) continue;
+        const a = clusterDist[ci].sum / clusterDist[ci].n;
+        let b = Infinity;
+        for (let c = 0; c < k; c++) {
+          if (c !== ci && clusterDist[c].n > 0) b = Math.min(b, clusterDist[c].sum / clusterDist[c].n);
+        }
+        if (b < Infinity && Math.max(a, b) > 0) {
+          silSum += (b - a) / Math.max(a, b);
+          silCount++;
+        }
+      }
+    }
+    return {
+      centroids: centroids.map((c, idx) => ({
+        label: 'Recommended Hub ' + (idx + 1) + ' (' + (c.count || 0) + ' sites)',
+        lat: c.lat,
+        lon: c.lon
+      })),
+      inertia: Number(inertia.toFixed(4)),
+      silhouette: silCount ? Number((silSum / silCount).toFixed(4)) : 0
+    };
+  }
+
+  function drawHubMap() {
+    if (!currentHubView || !hubMapHost || $('municipal').hidden || typeof L === 'undefined') return;
+    if (!hubMap) {
+      hubMap = mapPanel(hubMapHost);
+      if (!hubMap) return;
+      hubLayer = L.layerGroup().addTo(hubMap);
+    }
+    hubMap.invalidateSize();
+    hubLayer.clearLayers();
+    const bounds = [];
+    for (const s of currentHubView.stations || []) {
+      L.circleMarker([s.lat, s.lon], { radius: 5, color: '#484391', fillOpacity: 0.55, weight: 1 })
+        .bindPopup('<strong>' + (s.tags?.name || 'Mapped station') + '</strong>')
+        .addTo(hubLayer);
+      bounds.push([s.lat, s.lon]);
+    }
+    for (const c of currentHubView.centroids) {
+      L.circleMarker([c.lat, c.lon], { radius: 9, color: '#a62122', fillColor: '#ffd44e', fillOpacity: 0.95, weight: 2 })
+        .bindPopup('<strong>' + c.label + '</strong><br>' + c.lat.toFixed(4) + ', ' + c.lon.toFixed(4))
+        .addTo(hubLayer);
+      bounds.push([c.lat, c.lon]);
+    }
+    if (bounds.length > 1) hubMap.fitBounds(bounds, { padding: [24, 24] });
+    else if (bounds.length === 1) hubMap.setView(bounds[0], 12);
+  }
+
+  function showHubView(view) {
+    currentHubView = view;
+    if (hubSummary) hubSummary.textContent = view.summary;
+    hubMetrics.replaceChildren();
+    for (const [label, val] of view.metrics) {
+      const cell = el('p', label);
+      cell.append(el('strong', val));
+      hubMetrics.append(cell);
+    }
+    hubList.replaceChildren();
+    for (const c of view.centroids) {
+      hubList.append(el('li', c.label + ' — (' + c.lat.toFixed(4) + ', ' + c.lon.toFixed(4) + ')'));
+    }
+    drawHubMap();
+  }
+
+  function showBenchmarkHubs() {
+    const h = analytics.hubSiting;
+    showHubView({
+      summary: 'Saved Delhi NCR benchmark (K-Means on 5,000 simulated NCR sessions).',
+      metrics: [
+        ['K clusters', String(h.k)],
+        ['Silhouette score', String(h.silhouette)],
+        ['WSSSE inertia', String(h.inertia)]
+      ],
+      centroids: h.centroids,
+      stations: []
+    });
+  }
+
+  if (hubMetrics && hubList) {
+    showBenchmarkHubs();
+    window.addEventListener('hashchange', drawHubMap);
+
+    if (hubReset) {
+      hubReset.onclick = () => {
+        if (hubForm) hubForm.elements.city.value = '';
+        showBenchmarkHubs();
+      };
+    }
+
+    if (hubForm) {
+      hubForm.onsubmit = async e => {
+        e.preventDefault();
+        const cityQuery = hubForm.elements.city.value.trim();
+        const reqK = Number(hubForm.elements.k.value) || 4;
+        if (!cityQuery) { showBenchmarkHubs(); return; }
+        const btn = hubForm.querySelector('button');
+        btn.disabled = true;
+        if (hubSummary) hubSummary.textContent = 'Clustering mapped stations for ' + cityQuery + '…';
+        try {
+          const dir = window.stationDirectory || [];
+          let sites = [];
+          let areaLabel = cityQuery;
+          try {
+            const pt = await city(cityQuery);
+            areaLabel = pt.name;
+            sites = dir.filter(s => km(pt, s) <= 25);
+            if (sites.length < 4) sites = dir.filter(s => km(pt, s) <= 50);
+          } catch {
+            const q = cityQuery.toLowerCase();
+            sites = dir.filter(s => ((s.address || '') + ' ' + (s.tags?.name || '')).toLowerCase().includes(q));
+          }
+
+          // Deduplicate coordinates just like train_all_models.py
+          const seen = new Set();
+          const uniquePts = [];
+          for (const s of sites) {
+            const key = s.lat.toFixed(5) + ',' + s.lon.toFixed(5);
+            if (!seen.has(key)) {
+              seen.add(key);
+              uniquePts.push({ lat: s.lat, lon: s.lon });
+            }
+          }
+
+          if (uniquePts.length < 2) {
+            if (hubSummary) hubSummary.textContent = 'Found only ' + uniquePts.length + ' unique station coordinate(s) near ' + areaLabel + '. Need at least 2 stations to form clusters.';
+            return;
+          }
+
+          const k = Math.min(reqK, uniquePts.length);
+          const res = runKMeans(uniquePts, k);
+          showHubView({
+            summary: areaLabel + ': clustered ' + sites.length + ' mapped stations (' + uniquePts.length + ' unique locations) into ' + k + ' optimal hub zones.',
+            metrics: [
+              ['K clusters', String(k)],
+              ['Mapped stations', String(sites.length)],
+              ['Silhouette score', String(res.silhouette)],
+              ['WSSSE inertia', String(res.inertia)]
+            ],
+            centroids: res.centroids,
+            stations: sites
+          });
+        } finally {
+          btn.disabled = false;
+        }
+      };
+    }
+  }
+
+  // 5. Grid: Real Live Weather & Solar Grid Conditions (Open-Meteo API)
+  const liveGridForm = $('liveGridForm');
+  const liveGridStatus = $('liveGridStatus');
+  const liveGridMetrics = $('liveGridMetrics');
+  const liveGridHourly = $('liveGridHourly');
+  if (liveGridForm && liveGridStatus && liveGridMetrics && liveGridHourly) {
+    let liveLoadedOnce = false;
+    async function fetchLiveGrid(cityName) {
+      const btn = liveGridForm.querySelector('button');
+      btn.disabled = true;
+      liveGridStatus.textContent = 'Fetching real-time weather & solar telemetry for ' + cityName + '…';
+      try {
+        const pt = await city(cityName);
+        const params = new URLSearchParams({
+          latitude: pt.lat,
+          longitude: pt.lon,
+          current: 'temperature_2m,relative_humidity_2m,shortwave_radiation,wind_speed_10m',
+          hourly: 'temperature_2m,shortwave_radiation',
+          forecast_days: 2,
+          timezone: 'Asia/Kolkata'
+        });
+        const apiUrl = 'https://api.open-meteo.com/v1/forecast?' + params;
+        const apiLink = $('liveGridApiLink');
+        if (apiLink) apiLink.href = apiUrl;
+        const data = await json(apiUrl);
+        const cur = data.current || {};
+        const temp = cur.temperature_2m ?? 0;
+        const hum = cur.relative_humidity_2m ?? 0;
+        const solar = cur.shortwave_radiation ?? 0;
+        const wind = cur.wind_speed_10m ?? 0;
+
+        let advisory = 'Moderate ambient load.';
+        if (temp >= 35) advisory = 'High thermal load (>=35 °C) — expect higher EV battery cooling & HVAC grid draw.';
+        else if (solar >= 400) advisory = 'Strong daytime solar (' + Math.round(solar) + ' W/m²) — favourable for solar-assisted EV fast charging.';
+        else if (solar < 20) advisory = 'Low/zero solar irradiance — charging demand relies fully on grid/storage supply.';
+
+        liveGridStatus.textContent = pt.name + ' · Live API updated at ' + (cur.time ? cur.time.replace('T', ' ') + ' IST' : new Date().toLocaleTimeString()) + ' · ' + advisory;
+
+        liveGridMetrics.replaceChildren();
+        for (const [label, val] of [
+          ['Temperature', numberIN.format(temp) + ' °C'],
+          ['Humidity', numberIN.format(hum) + ' %'],
+          ['Solar irradiance', numberIN.format(solar) + ' W/m²'],
+          ['Wind speed', numberIN.format(wind) + ' km/h']
+        ]) {
+          const cell = el('p', label);
+          cell.append(el('strong', val));
+          liveGridMetrics.append(cell);
+        }
+
+        const times = data.hourly?.time || [];
+        const hSolar = data.hourly?.shortwave_radiation || [];
+        const hTemp = data.hourly?.temperature_2m || [];
+        const nowIso = cur.time ? cur.time.slice(0, 13) : '';
+        let startIdx = times.findIndex(t => t.startsWith(nowIso));
+        if (startIdx < 0) startIdx = 0;
+        const sliceTimes = times.slice(startIdx, startIdx + 12);
+        const maxSolar = Math.max(100, ...sliceTimes.map((_, i) => hSolar[startIdx + i] || 0));
+
+        liveGridHourly.replaceChildren(el('h3', 'Next 12 hours · Solar irradiance & temperature forecast'));
+        for (let i = 0; i < sliceTimes.length; i++) {
+          const tLabel = sliceTimes[i].slice(11, 16);
+          const sVal = hSolar[startIdx + i] ?? 0;
+          const tVal = hTemp[startIdx + i] ?? 0;
+          const row = el('div', '');
+          row.className = 'demand-row';
+          const bar = el('meter', '');
+          bar.max = maxSolar;
+          bar.value = sVal;
+          bar.setAttribute('aria-label', 'Solar irradiance at ' + tLabel);
+          row.append(
+            el('span', tLabel),
+            bar,
+            el('span', Math.round(sVal) + ' W/m² · ' + tVal + ' °C')
+          );
+          liveGridHourly.append(row);
+        }
+      } catch (err) {
+        liveGridStatus.textContent = failure(err);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    liveGridForm.onsubmit = e => {
+      e.preventDefault();
+      fetchLiveGrid(liveGridForm.elements.city.value);
+    };
+
+    function maybeLoadLiveGrid() {
+      if (!liveLoadedOnce && !$('grid').hidden) {
+        liveLoadedOnce = true;
+        fetchLiveGrid(liveGridForm.elements.city.value || 'Noida');
+      }
+    }
+    window.addEventListener('hashchange', maybeLoadLiveGrid);
+    maybeLoadLiveGrid();
+  }
+})();

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "VoltPulse"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "d478ef3a-69fd-4dce-af42-11842bde0d88"
+  }
+}
