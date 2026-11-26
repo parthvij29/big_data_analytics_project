@@ -1,7 +1,0 @@
-VoltPulse telemetry fixture review
-Input: data/streaming/live_stream_buffer.jsonl
-Event rows: 50
-Occupied event rows: 37
-Sum of event power values: 527.92 kW
-Events over 45 kW: 2
-Method: independently aggregated by the evaluation artifact builder from the saved simulator output.

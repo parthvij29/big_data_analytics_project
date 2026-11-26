@@ -6,7 +6,7 @@ try {
     $env:PYSPARK_PYTHON = $python
     $env:PYSPARK_DRIVER_PYTHON = $python
     $env:SPARK_LOCAL_IP = '127.0.0.1'
-    $out = 'evaluation/spark-run'
+    $out = 'extras/spark-run'
     New-Item -ItemType Directory -Force $out | Out-Null
 
     & $python -u -c "import pyspark, sys; print('Python', sys.version.split()[0], '/ PySpark', pyspark.__version__); from src.etl.etl_pipeline import run_etl; run_etl(output_dir='evaluation/spark-run')" |

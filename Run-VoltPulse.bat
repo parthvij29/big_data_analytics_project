@@ -11,9 +11,8 @@ if not errorlevel 1 (
 
 echo Starting VoltPulse at http://localhost:3000/
 echo Keep this window open while using the project.
-where node >nul 2>&1
-if not errorlevel 1 (
-    node evaluation\serve-demo.mjs
+if exist ".venv\Scripts\python.exe" (
+    .venv\Scripts\python.exe src\web\server.py
 ) else (
     python src\web\server.py
 )
